@@ -1,0 +1,91 @@
+fullnameOverride: commerce-integrations-transformers-staging
+
+resources:
+  requests:
+    cpu: "30m"
+    memory: "30Mi"
+
+extraVars:
+  # app env
+  CMRC_TRACE_SERVICE_NAME: "commerce-integrations-transformers"
+
+  CMRC_KAFKA_HOST: "pkc-4r087.us-west2.gcp.confluent.cloud:9092"
+  CMRC_KAFKA_USERNAME: "B5YS3A2BYZC34WGR"
+
+  CMRC_KAFKA_GROUP_ID: "commerce-integrations-transformers-staging"
+  CMRC_KAFKA_CLIENT_ID: "commerce-integrations-transformers-staging"
+  CMRC_KAFKA_CONSUMER_TOPIC: "CommerceIntegrationsExecution"
+  CMRC_KAFKA_PRODUCER_TOPICS: "com.yalo.schemas.events.commerce.integrations.IntegrationExecutionEvent:CommerceIntegrationsExecution"
+  CMRC_KAFKA_DEAD_LETTER_TOPIC: "CommerceIntegrationsExecutionDLQ"
+
+  CMRC_KAFKA_SCHEMA_REGISTRY_HOST: "https://psrc-4r3n1.us-central1.gcp.confluent.cloud"
+  CMRC_KAFKA_SCHEMA_REGISTRY_USERNAME: "QPKWW2Q5SQGSA7TQ"
+
+  CMRC_GCLOUD_PROJECT: "store-front-dev"
+  CMRC_GCLOUD_GCS_WRITER_BUCKET: "cmrc-integrations-staging"
+  CMRC_GCLOUD_GCS_DEFAULT_TIMEOUT: "1m"
+
+  # tracing
+  DD_ENV: "staging"
+  DD_SERVICE: "commerce-integrations-transformers"
+  DD_VERSION: "anothertag"
+
+image:
+  name: yalochat/commerce-integrations-transformers
+  tag: "anothertag"
+
+monitoring:
+  enabled: true
+  namespace: commerce-integrations-transformers
+  port: 8080
+  endpoints:
+    - metrics
+
+externalSecrets:
+  secrets:
+    - name: storefront-kafka-password-seda
+      varName: CMRC_KAFKA_PASSWORD
+    - name: storefront-schema-registry-password
+      varName: CMRC_KAFKA_SCHEMA_REGISTRY_PASSWORD
+
+extraRefVars:
+  - name: DD_AGENT_HOST
+    valueFrom:
+      fieldRef:
+        fieldPath: status.hostIP
+  - name: DD_TRACE_AGENT_HOSTNAME
+    valueFrom:
+      fieldRef:
+        fieldPath: status.hostIP
+
+# For testing purpose. Delete then implement it to kong if it's necessary.
+ingress:
+  enabled: "true"
+  class: nginx
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod-cluster-issuer
+  hosts:
+    - "commerce-integrations-transformers.yalochat.dev"
+  oauth:
+    enabled: false
+    host: "oauth2-proxy"
+  tls:
+    - hosts:
+        - commerce-integrations-transformers.yalochat.dev
+      secretName: commerce-integrations-transformers-staging-tls
+
+service:
+  type: ClusterIP
+  ports:
+    - name: http
+      protocol: TCP
+      port: 8080
+
+serviceAccount:
+  create: true
+  name: "commerce-itransformers-dev"
+  annotations:
+    iam.gke.io/gcp-service-account: "commerce-itransformers-dev@store-front-dev.iam.gserviceaccount.com"
+
+podAnnotations:
+  ad.datadoghq.com/platform-app.logs: '[{"source": "commerce-integrations-transformers", "service": "commerce-integrations-transformers-staging"}]'
