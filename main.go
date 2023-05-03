@@ -33,7 +33,8 @@ func getValuesYaml(dir string, repo string, stack string) (string, error) {
 			return nil
 		}
 
-		if !strings.Contains(path, repo) || !strings.Contains(path, stack) {
+		s := string(filepath.Separator)
+		if !strings.Contains(path, s+repo+s) || !strings.Contains(path, s+stack+s) {
 			return nil
 		}
 
