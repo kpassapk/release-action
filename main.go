@@ -58,7 +58,7 @@ var errTagNotFound = errors.New("tag not found")
 // withUpdatedReleaseTag looks for a `tag: ***` line in the input byte array s. If it finds the tag, it then replaces
 // all occurrences of that tag in the byte array.
 func withUpdatedReleaseTag(s []byte, tag string) ([]byte, error) {
-	re := regexp.MustCompile(`tag: "?([a-zA-Z0-9_-]+)"?`)
+	re := regexp.MustCompile(`tag: "?([.a-zA-Z0-9_-]+)"?`)
 
 	og := re.FindSubmatch(s)
 	if len(og) != 2 {
