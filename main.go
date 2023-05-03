@@ -24,10 +24,11 @@ func getValuesYaml(dir string, repo string, stack string) (string, error) {
 			return err
 		}
 
-		if d.IsDir() {
-			return nil
+		if d.IsDir() && d.Name() == ".git" {
+			return filepath.SkipDir
 		}
 
+		fmt.Println(d.Name())
 		if d.Name() != "values.yaml" {
 			return nil
 		}
