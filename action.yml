@@ -6,8 +6,8 @@ inputs:
     default: .
     description: "root directory of services repo containing all the values.yml"
     required: true
-  REPOSITORY:
-    description: "name of repository to deploy, e.g. commerce-integrations-transformers"
+  SERVICE:
+    description: "name of service to deploy, e.g. commerce-integrations-transformers"
     required: true
   STACK:
     description: "name of the stack to deploy, e.g. qa, develop, staging"
@@ -20,6 +20,6 @@ runs:
   image: Dockerfile
   env:
     PROJECT_ROOT: "${{ inputs.PROJECT_ROOT }}"
-    REPOSITORY: "${{ inputs.REPOSITORY }}"
+    SERVICE: "${{ inputs.SERVICE }}"
     STACK: "${{ inputs.STACK }}"
     TAG: "${{ inputs.TAG }}"
