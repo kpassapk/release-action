@@ -16,8 +16,8 @@ var errFileNotFound = errors.New("file not found")
 // getValuesYaml searches for the values.yaml file in the given directory and its subdirectories.
 // which contains repo and stack in its path. It returns the path to the first file which meets
 // these criteria, or an error otherwise.
-func getValuesYaml(dir string, repo string, stack string) (string, error) {
-	var valuesFilePath string
+func getValuesYaml(dir string, repo string, stack string) ([]string, error) {
+	var files []string
 
 	err := filepath.WalkDir(dir, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
@@ -38,19 +38,19 @@ func getValuesYaml(dir string, repo string, stack string) (string, error) {
 			return nil
 		}
 
-		valuesFilePath = path
+		files = append(files, path)
 		return nil
 	})
 
 	if err != nil {
-		return "", err
+		return files, err
 	}
 
-	if valuesFilePath == "" {
-		return "", errFileNotFound
+	if len(files) == 0 {
+		return files, errFileNotFound
 	}
 
-	return valuesFilePath, nil
+	return files, nil
 }
 
 var errTagNotFound = errors.New("tag not found")
@@ -75,8 +75,8 @@ func withUpdatedReleaseTag(s []byte, tag string) ([]byte, error) {
 var path = os.Getenv("PROJECT_ROOT")
 
 //goaction:required
-//goaction:description name of repository to deploy, e.g. commerce-integrations-transformers
-var repo = os.Getenv("REPOSITORY")
+//goaction:description name of service to deploy, e.g. commerce-integrations-transformers
+var service = os.Getenv("SERVICE")
 
 //goaction:required
 //goaction:description name of the stack to deploy, e.g. qa, develop, staging
@@ -87,20 +87,24 @@ var stack = os.Getenv("STACK")
 var tag = os.Getenv("TAG")
 
 func main() {
-	valuesYaml, err := getValuesYaml(path, repo, stack)
+	valuesYaml, err := getValuesYaml(path, service, stack)
 	if err != nil {
 		panic(err)
 	}
-	inf, err := os.ReadFile(valuesYaml)
-	if err != nil {
-		panic(err)
+
+	for _, file := range valuesYaml {
+		inf, err := os.ReadFile(file)
+		if err != nil {
+			panic(err)
+		}
+		out, err := withUpdatedReleaseTag(inf, tag)
+		if err != nil {
+			panic(err)
+		}
+		if err := os.WriteFile(file, out, 0666); err != nil {
+			panic(err)
+		}
+		fmt.Printf("Wrote %s\n", file)
 	}
-	out, err := withUpdatedReleaseTag(inf, tag)
-	if err != nil {
-		panic(err)
-	}
-	if err := os.WriteFile(valuesYaml, out, 0666); err != nil {
-		panic(err)
-	}
-	fmt.Printf("Wrote %s\n", valuesYaml)
+
 }
